@@ -1,4 +1,6 @@
 .env
+.env.*
+!.env.example
 deploy-cloudbase/
 node_modules/
 output/*

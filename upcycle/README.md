@@ -104,7 +104,7 @@ npm run verify:all         # 以上全部按顺序跑一遍（含线上检查，
 
 ## CloudBase 上线
 
-**可分享网址**：https://evansongdev-d3gwank9e76835e8b-1343046532.tcloudbaseapp.com/upcycle/
+**可分享网址**：https://case.evansong.cn/upcycle/ （备用测试域名 https://evansongdev-d3gwank9e76835e8b-1343046532.tcloudbaseapp.com/upcycle/ ，首次访问有风险提醒中间页）
 
 | 部分 | 落点 |
 | --- | --- |
@@ -163,3 +163,38 @@ cd .. && npm run verify:cloudbase
 **未采用 CloudRun**：`tcb cloudrun deploy` 返回 `CreateCloudRunServer 云托管资源未开通`；该环境是包年包月（prepayment），云托管需在控制台首次开通，因此改用静态托管 + HTTP 云函数。
 
 `server.js` 支持 `HOST` 环境变量（默认仍 `127.0.0.1`），仅为将来容器化部署预留，本地预览行为不变。
+
+## 自动部署（CloudBase 原生流水线）
+
+2026-11-07 启用。选型 **B · CloudBase 原生流水线**：构建环境预装已登录的 CloudBase CLI，**免腾讯云长期密钥**；范围**只管 `upcycle/`**，门户根页与 `/stock-review/` 不进本仓库、继续手工维护。
+
+| 项 | 值 |
+| --- | --- |
+| 控制台入口 | CloudBase → 扩展功能 → 流水线管理（`tcb.cloud.tencent.com/dev#/pipeline`） |
+| 流水线名 | `upcycle-deploy` |
+| 触发方式 | **公开仓库部署**（public repo 免 GitHub OAuth），`https://github.com/Songhonglei/better-life-suit`，分支 `main` |
+| 自动部署 | **已开启**：push 到 `main` 自动触发构建与部署；开关在流水线信息页，即时生效、无需重新构建 |
+| 目标目录 | `./upcycle` |
+| 命令模式 | 自定义编排，四步：`prepare` → `env` → `deploy` → `verify` |
+| 部署命令 | `tcb deploy --yes --only functions,hosting` |
+
+四步（都在 `./upcycle` 下执行）：
+
+```bash
+node scripts/build-cloudbase.js         # prepare：生成 deploy-cloudbase/site 与 functions
+node scripts/write-pipeline-env.js      # env：把流水线 Secrets 写成 .env.local（600，gitignore 排除）
+tcb deploy --yes --only functions,hosting   # deploy：只更新 upcycle-api 与 /upcycle/
+node scripts/verify-pipeline.js         # verify：远端验真，见下
+```
+
+**密钥链路（最容易踩的一条）**：`cloudbaserc.json` 里的 `{{env.LLM_API_KEY}}` 由 CLI 用 dotenv 从 `.env` / `.env.local` **文件**读取，**不是**读进程环境变量。所以流水线环境变量填的是 `SECRET_LLM_BASE_URL` / `SECRET_LLM_API_KEY`（值取自本机 `~/.workbuddy/models.json` 的 `qwen3.8-flash`），再由 `write-pipeline-env.js` 生成 `.env.local` 给 CLI 解析。缺必需项时脚本直接抛错中止，**不会**用空配置把线上覆盖回 demo。密钥不进仓库、不进静态站、不回显到构建日志。
+
+**验真铁律**：部署命令退出码 0 不算数。`verify-pipeline.js` 会查 `GET /api/config` 断言 `live/vision/ocr`、比对 `/upcycle/index.html` 与本地产物 md5、确认门户根页与 `/stock-review/`、`og.png`、`cloudbase-sdk.js` 未被覆盖、真发一次 OCR，并**真发一次 `/api/ideas` 断言 `source=llm` 且至少出一个方案**——config 显示 live 只说明配置写进去了，Key 没解析成功时 config 仍可能显示 live，只有真调模型才能抓出来。实测无图请求偶发只回 1 个可行方案（模型对预算/工具的约束判断抖动），所以「三方案齐全」只打印 warn 不算失败，避免 CI 误报。
+
+**护栏**：`tcb deploy` 固定带 `--only functions,hosting`，**不带 `--prune`、不声明 `gateway`、不写根路径**。静态托管是全站共用一份（根页、`/stock-review/`、`oa/`、`cloud-admin/`、`__auth/` 都在同一环境），dry-run 实测部署计划只有 `update upcycle-api` + `deploy /upcycle` 两项。
+
+**怎么触发**：往 `main` push 任意 commit 即触发；控制台可手动「重新部署」。目前**没有 paths 过滤**：绑的是整个 repo，其他子目录的 push 也会触发一次 upcycle 部署（内容相同、幂等无害，但浪费一次构建）；未来新增工具时要重新评估，或把流水线拆到独立分支/仓库。
+
+**怎么回滚**：模型配置被覆盖或部署失败时，本机跑 `npm run deploy:live`（从 `models.json` 重新注入 Qwen 配置）并 `GET /api/config` 复核 `mode=live`；静态侧从 `output/backup/` 的备份恢复根页与路由清单。注意本机 `deploy:live` 与流水线**都会更新同一个 `upcycle-api`**，后跑者覆盖前者；手工改过云函数配置后，下一次 push 会被声明式配置重置回来。
+
+**本机复现**：`npm run pipeline:all`（`build:cloudbase` + `pipeline:env` + `pipeline:deploy` + `pipeline:verify`）。`pipeline:env` 需要 `SECRET_LLM_*` 环境变量，本机默认没有，属预期行为；只想验线上用 `npm run pipeline:verify`。完整探查过程、方案对比与遗留清单见 `docs/CloudBase自动部署-阶段复盘.md`。

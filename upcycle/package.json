@@ -15,7 +15,11 @@
     "build:cloudbase": "node scripts/build-cloudbase.js",
     "deploy:live": "node scripts/deploy-live.js",
     "verify:cloudbase": "node scripts/verify-cloudbase.js",
-    "verify:cloud-ocr": "node scripts/verify-cloud-ocr.js"
+    "verify:cloud-ocr": "node scripts/verify-cloud-ocr.js",
+    "pipeline:env": "node scripts/write-pipeline-env.js",
+    "pipeline:deploy": "tcb deploy --yes --only functions,hosting",
+    "pipeline:verify": "node scripts/verify-pipeline.js",
+    "pipeline:all": "npm run build:cloudbase && npm run pipeline:env && npm run pipeline:deploy && npm run pipeline:verify"
   },
   "engines": {
     "node": ">=18"
