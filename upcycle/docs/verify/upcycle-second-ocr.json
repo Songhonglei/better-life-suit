@@ -1,0 +1,59 @@
+{
+  "status": 200,
+  "ms": 1515,
+  "data": {
+    "ok": true,
+    "mode": "live",
+    "source": "ocr",
+    "requestId": "r-mw66fs1i-4lz1j",
+    "ocr": {
+      "lines": [
+        {
+          "text": "NEW PACK",
+          "confidence": 100
+        },
+        {
+          "text": "Dove",
+          "confidence": 100
+        },
+        {
+          "text": "UTR",
+          "confidence": 100
+        },
+        {
+          "text": "INTENSE",
+          "confidence": 100
+        },
+        {
+          "text": "REPAIR",
+          "confidence": 100
+        },
+        {
+          "text": "NOURISHING",
+          "confidence": 100
+        },
+        {
+          "text": "SHAMPOO",
+          "confidence": 100
+        },
+        {
+          "text": "For Damaged Hair",
+          "confidence": 100
+        },
+        {
+          "text": "69715626",
+          "confidence": 100
+        },
+        {
+          "text": "80ml",
+          "confidence": 100
+        }
+      ],
+      "joined": "NEW PACK / Dove / UTR / INTENSE / REPAIR / NOURISHING / SHAMPOO / For Damaged Hair / 69715626 / 80ml",
+      "count": 10,
+      "guess": null,
+      "requestId": "320c3935-6ff0-4d64-b749-52a73fc8baff",
+      "notice": "下面是照片上真实读到的文字。它可能只是包装或标签内容，不代表对物品的判断，请核对后再用。"
+    }
+  }
+}

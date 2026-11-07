@@ -1,0 +1,649 @@
+{
+  "status": 200,
+  "ms": 17212,
+  "data": {
+    "ok": true,
+    "mode": "live",
+    "source": "llm",
+    "requestId": "r-mw66g5bw-f2fw9",
+    "notice": "已把图片发给配置的模型，模型返回了物品与材质判断；下面可以纠正后再迭代。",
+    "recognized": {
+      "item": "多芬洗发水瓶",
+      "material": "塑料",
+      "source": "vision"
+    },
+    "visionUsed": true,
+    "constraints": {
+      "budget": 30,
+      "tools": [
+        "scissors",
+        "ruler",
+        "pencil",
+        "glue",
+        "tape"
+      ],
+      "forbidden": [],
+      "extra": ""
+    },
+    "specs": [
+      {
+        "id": "p1",
+        "lane": "practical",
+        "title": "桌面收纳笔筒",
+        "result": "将瓶身剪短，作为放置文具的容器。",
+        "summary": "利用洗发水瓶的圆柱结构，制作简易笔筒。",
+        "diagram": {
+          "type": "cylinder",
+          "w": 20,
+          "h": 20,
+          "d": 4,
+          "unit": "cm",
+          "fold": false,
+          "labels": [
+            "瓶口边缘",
+            "瓶身主体"
+          ]
+        },
+        "materials": [
+          {
+            "name": "空洗发水瓶",
+            "qty": "适量",
+            "cost": 0,
+            "optional": false,
+            "requires": [],
+            "note": "需洗净晾干"
+          },
+          {
+            "name": "装饰贴纸",
+            "qty": "适量",
+            "cost": 2,
+            "optional": true,
+            "requires": [],
+            "note": "可选"
+          }
+        ],
+        "steps": [
+          {
+            "label": "裁剪瓶身",
+            "variants": [
+              {
+                "needs": [
+                  "scissors"
+                ],
+                "text": "用铅笔沿瓶身画线，剪刀沿线剪开。",
+                "minutes": 5,
+                "note": "注意切口平整"
+              },
+              {
+                "needs": [
+                  "hands"
+                ],
+                "text": "反复弯折瓶颈处直至断裂（效果差）。",
+                "minutes": 15,
+                "note": "边缘可能不整齐"
+              }
+            ],
+            "optional": false
+          },
+          {
+            "label": "打磨边缘",
+            "variants": [
+              {
+                "needs": [
+                  "scissors"
+                ],
+                "text": "修剪毛刺，使边缘圆润。",
+                "minutes": 3,
+                "note": "小心割手"
+              },
+              {
+                "needs": [
+                  "hands"
+                ],
+                "text": "用手指按压边缘使其贴合。",
+                "minutes": 5,
+                "note": "无法完全去除锋利感"
+              }
+            ],
+            "optional": false
+          },
+          {
+            "label": "外观美化",
+            "variants": [
+              {
+                "needs": [
+                  "glue"
+                ],
+                "text": "粘贴装饰纸或贴纸包裹瓶身。",
+                "minutes": 10,
+                "note": "增加美观度"
+              },
+              {
+                "needs": [
+                  "hands"
+                ],
+                "text": "直接摆放使用。",
+                "minutes": 1,
+                "note": "保留原包装风格"
+              }
+            ],
+            "optional": false
+          }
+        ],
+        "notes": [
+          "切口处可用胶带缠绕一圈防割手",
+          "避免盛放热水或尖锐物品"
+        ],
+        "isFallback": false,
+        "isGeneric": false
+      },
+      {
+        "id": "p2",
+        "lane": "aesthetic",
+        "title": "迷你多肉花盆",
+        "result": "改造为小型植物种植容器。",
+        "summary": "利用瓶身形状，制作简约风微型盆栽。",
+        "diagram": {
+          "type": "terrarium",
+          "w": 20,
+          "h": 20,
+          "d": 4,
+          "unit": "cm",
+          "fold": false,
+          "labels": [
+            "土壤层",
+            "植物根部"
+          ]
+        },
+        "materials": [
+          {
+            "name": "空洗发水瓶",
+            "qty": "适量",
+            "cost": 0,
+            "optional": false,
+            "requires": [],
+            "note": "需彻底清洗残留物"
+          },
+          {
+            "name": "小石子",
+            "qty": "适量",
+            "cost": 3,
+            "optional": true,
+            "requires": [],
+            "note": "用于排水层"
+          },
+          {
+            "name": "营养土",
+            "qty": "适量",
+            "cost": 5,
+            "optional": false,
+            "requires": [],
+            "note": "少量即可"
+          }
+        ],
+        "steps": [
+          {
+            "label": "切割造型",
+            "variants": [
+              {
+                "needs": [
+                  "scissors"
+                ],
+                "text": "剪去上半部分，保留底部约8厘米高度。",
+                "minutes": 5,
+                "note": "保持对称"
+              },
+              {
+                "needs": [
+                  "hands"
+                ],
+                "text": "尝试撕开软质塑料（成功率低）。",
+                "minutes": 20,
+                "note": "可能导致变形"
+              }
+            ],
+            "optional": false
+          },
+          {
+            "label": "铺设底层",
+            "variants": [
+              {
+                "needs": [
+                  "hands"
+                ],
+                "text": "放入几颗小石子防止积水。",
+                "minutes": 2,
+                "note": "利于根系呼吸"
+              },
+              {
+                "needs": [
+                  "tape"
+                ],
+                "text": "用胶带固定石子位置（非必须）。",
+                "minutes": 3,
+                "note": "仅起临时作用"
+              }
+            ],
+            "optional": false
+          },
+          {
+            "label": "填土种植",
+            "variants": [
+              {
+                "needs": [
+                  "hands"
+                ],
+                "text": "倒入适量泥土并压实中心区域。",
+                "minutes": 5,
+                "note": "留出空间给幼苗"
+              },
+              {
+                "needs": [
+                  "ruler"
+                ],
+                "text": "用尺子辅助整理表面平整度。",
+                "minutes": 3,
+                "note": "提升视觉效果"
+              }
+            ],
+            "optional": false
+          }
+        ],
+        "notes": [
+          "此方案不适合长期户外使用",
+          "建议搭配喜阴的小型绿植"
+        ],
+        "isFallback": false,
+        "isGeneric": false
+      },
+      {
+        "id": "p3",
+        "lane": "wild",
+        "title": "抽象艺术雕塑",
+        "result": "通过扭曲与重组创造独特形态。",
+        "summary": "打破原有结构，形成具有张力的艺术品。",
+        "diagram": {
+          "type": "weave",
+          "w": 20,
+          "h": 20,
+          "d": 5,
+          "unit": "cm",
+          "fold": true,
+          "labels": [
+            "扭曲点",
+            "连接节点"
+          ]
+        },
+        "materials": [
+          {
+            "name": "空洗发水瓶",
+            "qty": "适量",
+            "cost": 0,
+            "optional": false,
+            "requires": [],
+            "note": "选择较厚壁款更稳定"
+          },
+          {
+            "name": "彩色马克笔",
+            "qty": "适量",
+            "cost": 4,
+            "optional": true,
+            "requires": [],
+            "note": "用于标记重点部位"
+          }
+        ],
+        "steps": [
+          {
+            "label": "初步塑形",
+            "variants": [
+              {
+                "needs": [
+                  "hands"
+                ],
+                "text": "用力挤压瓶身制造褶皱和凹陷。",
+                "minutes": 10,
+                "note": "无需工具也能改变外形"
+              },
+              {
+                "needs": [
+                  "scissors"
+                ],
+                "text": "在侧面开几个长条状裂口以便折叠。",
+                "minutes": 8,
+                "note": "增强可塑性"
+              }
+            ],
+            "optional": false
+          },
+          {
+            "label": "结构拼接",
+            "variants": [
+              {
+                "needs": [
+                  "tape"
+                ],
+                "text": "将不同角度的碎片用胶带粘合在一起。",
+                "minutes": 15,
+                "note": "形成不规则立体感"
+              },
+              {
+                "needs": [
+                  "hands"
+                ],
+                "text": "依靠自身弹性卡扣组合（不稳定）。",
+                "minutes": 20,
+                "note": "容易散架"
+              }
+            ],
+            "optional": false
+          },
+          {
+            "label": "最终定型",
+            "variants": [
+              {
+                "needs": [
+                  "hotglue"
+                ],
+                "text": "热熔胶加固关键受力点。",
+                "minutes": 10,
+                "note": "提高耐久性"
+              },
+              {
+                "needs": [
+                  "hands"
+                ],
+                "text": "静置等待自然回弹定型。",
+                "minutes": 30,
+                "note": "效果有限但安全"
+              }
+            ],
+            "optional": false
+          }
+        ],
+        "notes": [
+          "该作品仅供观赏不可承重",
+          "过程中注意保护双手免受划伤"
+        ],
+        "isFallback": false,
+        "isGeneric": false
+      }
+    ],
+    "plans": [
+      {
+        "id": "p1",
+        "lane": "practical",
+        "title": "桌面收纳笔筒",
+        "result": "将瓶身剪短，作为放置文具的容器。",
+        "summary": "利用洗发水瓶的圆柱结构，制作简易笔筒。",
+        "diagram": {
+          "type": "cylinder",
+          "w": 20,
+          "h": 20,
+          "d": 4,
+          "unit": "cm",
+          "fold": false,
+          "labels": [
+            "瓶口边缘",
+            "瓶身主体"
+          ]
+        },
+        "materials": [
+          {
+            "name": "空洗发水瓶",
+            "qty": "适量",
+            "cost": 0,
+            "optional": false,
+            "note": "需洗净晾干"
+          },
+          {
+            "name": "装饰贴纸",
+            "qty": "适量",
+            "cost": 2,
+            "optional": true,
+            "note": "可选"
+          }
+        ],
+        "toolsUsed": [
+          "scissors"
+        ],
+        "estimatedCost": 2,
+        "timeMinutes": 9,
+        "difficulty": "入门",
+        "steps": [
+          {
+            "label": "裁剪瓶身",
+            "text": "用铅笔沿瓶身画线，剪刀沿线剪开。",
+            "tools": [
+              "scissors"
+            ],
+            "minutes": 5,
+            "note": "注意切口平整",
+            "optional": false
+          },
+          {
+            "label": "打磨边缘",
+            "text": "修剪毛刺，使边缘圆润。",
+            "tools": [
+              "scissors"
+            ],
+            "minutes": 3,
+            "note": "小心割手",
+            "optional": false
+          },
+          {
+            "label": "外观美化",
+            "text": "直接摆放使用。",
+            "tools": [],
+            "minutes": 1,
+            "note": "保留原包装风格",
+            "optional": false
+          }
+        ],
+        "notes": [
+          "切口处可用胶带缠绕一圈防割手",
+          "避免盛放热水或尖锐物品"
+        ],
+        "isFallback": false,
+        "isGeneric": false
+      },
+      {
+        "id": "p2",
+        "lane": "aesthetic",
+        "title": "迷你多肉花盆",
+        "result": "改造为小型植物种植容器。",
+        "summary": "利用瓶身形状，制作简约风微型盆栽。",
+        "diagram": {
+          "type": "terrarium",
+          "w": 20,
+          "h": 20,
+          "d": 4,
+          "unit": "cm",
+          "fold": false,
+          "labels": [
+            "土壤层",
+            "植物根部"
+          ]
+        },
+        "materials": [
+          {
+            "name": "空洗发水瓶",
+            "qty": "适量",
+            "cost": 0,
+            "optional": false,
+            "note": "需彻底清洗残留物"
+          },
+          {
+            "name": "小石子",
+            "qty": "适量",
+            "cost": 3,
+            "optional": true,
+            "note": "用于排水层"
+          },
+          {
+            "name": "营养土",
+            "qty": "适量",
+            "cost": 5,
+            "optional": false,
+            "note": "少量即可"
+          }
+        ],
+        "toolsUsed": [
+          "scissors"
+        ],
+        "estimatedCost": 8,
+        "timeMinutes": 12,
+        "difficulty": "入门",
+        "steps": [
+          {
+            "label": "切割造型",
+            "text": "剪去上半部分，保留底部约8厘米高度。",
+            "tools": [
+              "scissors"
+            ],
+            "minutes": 5,
+            "note": "保持对称",
+            "optional": false
+          },
+          {
+            "label": "铺设底层",
+            "text": "放入几颗小石子防止积水。",
+            "tools": [],
+            "minutes": 2,
+            "note": "利于根系呼吸",
+            "optional": false
+          },
+          {
+            "label": "填土种植",
+            "text": "倒入适量泥土并压实中心区域。",
+            "tools": [],
+            "minutes": 5,
+            "note": "留出空间给幼苗",
+            "optional": false
+          }
+        ],
+        "notes": [
+          "此方案不适合长期户外使用",
+          "建议搭配喜阴的小型绿植"
+        ],
+        "isFallback": false,
+        "isGeneric": false
+      },
+      {
+        "id": "p3",
+        "lane": "wild",
+        "title": "抽象艺术雕塑",
+        "result": "通过扭曲与重组创造独特形态。",
+        "summary": "打破原有结构，形成具有张力的艺术品。",
+        "diagram": {
+          "type": "weave",
+          "w": 20,
+          "h": 20,
+          "d": 5,
+          "unit": "cm",
+          "fold": true,
+          "labels": [
+            "扭曲点",
+            "连接节点"
+          ]
+        },
+        "materials": [
+          {
+            "name": "空洗发水瓶",
+            "qty": "适量",
+            "cost": 0,
+            "optional": false,
+            "note": "选择较厚壁款更稳定"
+          },
+          {
+            "name": "彩色马克笔",
+            "qty": "适量",
+            "cost": 4,
+            "optional": true,
+            "note": "用于标记重点部位"
+          }
+        ],
+        "toolsUsed": [],
+        "estimatedCost": 4,
+        "timeMinutes": 60,
+        "difficulty": "挑战",
+        "steps": [
+          {
+            "label": "初步塑形",
+            "text": "用力挤压瓶身制造褶皱和凹陷。",
+            "tools": [],
+            "minutes": 10,
+            "note": "无需工具也能改变外形",
+            "optional": false
+          },
+          {
+            "label": "结构拼接",
+            "text": "依靠自身弹性卡扣组合（不稳定）。",
+            "tools": [],
+            "minutes": 20,
+            "note": "容易散架",
+            "optional": false
+          },
+          {
+            "label": "最终定型",
+            "text": "静置等待自然回弹定型。",
+            "tools": [],
+            "minutes": 30,
+            "note": "效果有限但安全",
+            "optional": false
+          }
+        ],
+        "notes": [
+          "该作品仅供观赏不可承重",
+          "过程中注意保护双手免受划伤"
+        ],
+        "isFallback": false,
+        "isGeneric": false
+      }
+    ],
+    "infeasible": [],
+    "alternatives": [],
+    "laneStatus": [
+      {
+        "lane": "practical",
+        "label": "实用款",
+        "feasible": true,
+        "planId": "p1",
+        "title": "桌面收纳笔筒",
+        "estimatedCost": 2,
+        "reason": ""
+      },
+      {
+        "lane": "aesthetic",
+        "label": "好看款",
+        "feasible": true,
+        "planId": "p2",
+        "title": "迷你多肉花盆",
+        "estimatedCost": 8,
+        "reason": ""
+      },
+      {
+        "lane": "wild",
+        "label": "脑洞款",
+        "feasible": true,
+        "planId": "p3",
+        "title": "抽象艺术雕塑",
+        "estimatedCost": 4,
+        "reason": ""
+      }
+    ],
+    "notes": [
+      "模型输出已重新做预算与工具校验，不满足限制的款式会被标为不可行。",
+      "注意切口平整",
+      "小心割手",
+      "保留原包装风格",
+      "保持对称",
+      "利于根系呼吸",
+      "留出空间给幼苗",
+      "无需工具也能改变外形",
+      "容易散架",
+      "效果有限但安全"
+    ],
+    "safety": [],
+    "costNote": "费用为估计；未核实材质不保证安全、承重与防水。"
+  }
+}
