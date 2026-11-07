@@ -1,13 +1,13 @@
 # 阶段复盘：GitHub main → CloudBase 自动部署
 
-时间：2026-11-07 19:40　｜　阶段状态：**探查与方案设计完成，实施暂停，线上零变更**
+时间：2026-11-07 19:40 起　｜　当前状态：**已实施完成，push 自动部署已打通**（20:00 更新）
 
-> **归档说明**：本文是 19:40 的**阶段快照**，第七节「需要你协助的事项」为当时状态——用户随后已授权 Qwen Key 从本机读取注入、允许 ego-browser 操作控制台并同意提交 push。实施结果、最终配置与已知限制以 `../README.md` 的「自动部署」章节和 `../验证记录.md` 为准；文中 `output/backup/` 等路径指本地工作副本 `workbuddy-hy4-upcycle/app/`，不在本仓库内。
+> **归档说明**：第一至第八节是 19:40 的探查与设计阶段快照，第七节「需要你协助的事项」为当时状态——用户随后已授权 Qwen Key 从本机读取注入、允许 ego-browser 操作控制台并同意提交 push，五项均已解决。**实施结果见第九节**，最终配置与已知限制以 `../README.md` 的「自动部署」章节和 `../验证记录.md` 为准；文中 `output/backup/` 等路径指本地工作副本 `workbuddy-hy4-upcycle/app/`，不在本仓库内。
 
 ## 一、结论
 
 能实现。官方提供两条自动部署链路，我给了三套方案，你选了 **B · CloudBase 原生流水线**，范围限定 **只管 `upcycle/`，门户根页与 `/stock-review/` 不纳入 repo**。
-本阶段完成的是「可行性探查 + 方案对比 + repo 侧骨架」，**没有创建流水线、没有提交代码、没有部署到线上**。`case.evansong.cn` 三个页面与云函数仍正常运行：`mode=live / vision=true / model=qwen3.8-flash / ocr=true`。
+当时只完成「可行性探查 + 方案对比 + repo 侧骨架」，未创建流水线、未提交、未部署。后续已全部实施：流水线 `upcycle-deploy` 创建成功、首次部署 `Successful`、push 自动触发已验证（详见第九节）。`case.evansong.cn` 三个页面与云函数全程正常：`mode=live / vision=true / model=qwen3.8-flash / ocr=true`。
 
 ## 二、探查硬结果（都有实证，不靠猜）
 
@@ -69,7 +69,7 @@ repo 工作区新增 3 个文件（**均未 `git add`、未提交**）：
 当前**没有任何线上变更**，回滚等于什么都不用做。后续若真实部署出问题：静态侧用 `output/backup/stock-review-root.original.html` 与 `domains-before-case.json` / `routes-before-case.json` 恢复；云函数侧重跑 `npm run deploy:live`（从本机 models.json 重新注入 Qwen 配置）并 `GET /api/config` 复核。
 必须守住的护栏：部署命令固定 `tcb deploy --yes --only functions,hosting`，**不带 `--prune`、不写 `gateway` 声明、不部署到根路径**；密钥只走流水线 Secrets → `.env.local`，不进仓库、不进静态站、不回显到构建日志。
 
-## 七、需要你协助的事项（逐条，都是我这边做不了的）
+## 七、当时的协助事项（用户已全部授权 / 解决）
 
 1. **拍板 Qwen Key 来源**（唯一必须你碰的敏感信息，腾讯云长期密钥不需要）：
    - ① 你在 CloudBase 控制台流水线「高级设置 → 部署变量」里自己填 `SECRET_LLM_BASE_URL`、`SECRET_LLM_API_KEY`；
@@ -88,4 +88,46 @@ repo 工作区新增 3 个文件（**均未 `git add`、未提交**）：
 - `verify-pipeline.js` 全绿，构建日志里不出现任何密钥明文；
 - repo 与本地工作副本文件一致，README 写清「怎么触发、怎么回滚、密钥在哪」。
 
-当前任务状态：#33 探查已完成；#34 写配置与脚本进行中（3 文件已写、未提交、未同步）；#35 创建流水线、#36 push 实测均待办。
+当前任务状态（19:40 快照）：#33 探查已完成；#34 写配置与脚本进行中（3 文件已写、未提交、未同步）；#35 创建流水线、#36 push 实测均待办。
+
+## 九、实施结果（2026-11-07 20:00）
+
+**结论：B 方案成立，push 自动部署已打通。** 最大的意外是「公开仓库部署」模式**免 GitHub OAuth 授权，且自动部署开关照样在**，绕开了 P0-2 的授权阻塞；开关点开后 push 到 main 就能触发，P0-1 不再是问题。
+
+### 落地配置
+
+| 项 | 值 |
+| --- | --- |
+| 流水线 | `upcycle-deploy`，控制台 `#/pipeline`（扩展功能 → 流水线管理） |
+| 触发 | 公开仓库部署，`https://github.com/Songhonglei/better-life-suit` / `main`，**自动部署开关 ON** |
+| 目标目录 | `./upcycle`；构建日志实证命令被拼成 `cd /root/cloudbase-workspace && cd ./upcycle && <命令>`，路径假设成立 |
+| 自定义编排 | `prepare`（build-cloudbase.js）→ `env`（write-pipeline-env.js）→ `deploy`（`tcb deploy --yes --only functions,hosting`）→ `verify`（verify-pipeline.js） |
+| 密钥 | 流水线环境变量 `SECRET_LLM_BASE_URL` / `SECRET_LLM_API_KEY`，值由 ego-browser 在浏览器进程内从本机 `~/.workbuddy/models.json` 的 `qwen3.8-flash` 读取后填入，不进仓库、不回显到构建日志 |
+| CLI 版本 | 构建环境 CloudBase CLI 3.9.0（本机 3.9.1） |
+
+### 验真硬结果
+
+- 首次部署 `upcycle-deploy-001`（buildId `2611419300`）状态 **Successful**；`tcb deploy` 预执行计划只有 `Overwrite 1 (upcycle-api)` + `Direct upload 1 (upcycle)`，**没有碰门户根页、其他应用、网关路由**。
+- 流水线内 `verify` **13 通过 / 0 失败**：`/api/config` = live/vision/ocr、静态 index.html 与产物 md5 一致、根页与 `/stock-review/`/`og.png`/`cloudbase-sdk.js` 完好、真 OCR POST 成功、**真发 `/api/ideas` 返回 `source=llm`**。最后一条证明 `{{env.*}}` 从 `.env.local` 解析成功、Qwen Key 真的进了云函数——**P0-4 闭环**。
+- 独立外部复核（不依赖流水线日志）：根页 200 / TLS 0，`config` 仍 `live / vision / qwen3.8-flash / ocr=true`；本地再跑一次 `verify-pipeline.js` 同样 13/13。
+- 提交：`3b90568 → 869bed1`（首次收录流水线配置 + 复盘），远端 `git ls-remote` HEAD 一致、目录树 52 文件、7 个关键文件 base64 md5 逐字节一致、全量扫描无密钥。
+
+### 关键查证与新增发现
+
+1. **`{{env.XXX}}` 读的是 `.env` / `.env.local` 文件（dotenv），不是进程环境变量**。官方文档「数据源：env `*` 从 `.env` 文件加载」明确写了；所以流水线填 `SECRET_*`，必须由 `write-pipeline-env.js` 落成 `.env.local`（600 + gitignore），`tcb deploy` 才解析得到。这是整个密钥链路最容易想错的一环。
+2. **模型方案数量会抖动**：无图纯文字 `/api/ideas` 连测三次分别返回 3 / 1 / 2 个可行方案（另几次是 `infeasible=2`），`source=llm` 每次都成立——是模型对预算/工具约束的判断波动，不是部署故障。所以验真脚本硬断言改成 `source=llm && plans>=1`，「三方案齐全」只打印 warn。硬断言 3 个会让 CI 误报，这个坑是实测抓出来的，不是推演。
+3. **一次操作失误（如实记录）**：填完密钥后调用了 `page.snapshot()`，把 API Key 明文带进了本地工具输出。密钥未写入任何文件、未进仓库、未进构建日志、未出本机会话；后续全部改成 `page.evaluate()` 脱敏读取。**含密钥的表单页禁止用 snapshot**，下次直接走脱敏路径。是否轮换该 Key 由用户决定。
+4. `tcb` 增删域名/路由要交互确认，`printf 'Y\n'` 喂确认；控制台 Tea UI 的 switch 是 `input` 被 `span` 覆盖，`page.click` 会报 intercepts，用 DOM `cb.click()` 才生效。
+
+### 仍未解决 / 已知限制
+
+| 项 | 状态 |
+| --- | --- |
+| P1-4 无 `paths` 过滤 | **仍在**：绑整个 repo，其他子目录 push 也会触发一次 upcycle 部署（幂等、无害，但浪费构建）；控制台没给过滤选项，未来加工具要重新评估 |
+| P1-2 hosting「直传覆盖」是否清空 `/upcycle/` 旧文件 | 本次实证：上传 8+1 个文件、`tcb hosting list` 总数 21 与部署前一致，`verify` 静态 md5 与存量页面全绿 → 未误删 |
+| P1-3 声明式部署是否重置 `/upcycle/api` 路由 | 本次实证：`/api/config`、真 OCR、真 ideas 全通，路由未被重置 |
+| P1-1 / P1-5 / P2 | 已解决：ideas 断言补上、3 文件同步回本地工作副本、package.json pipeline scripts 与 README 自动部署章节补齐 |
+| 旧遗留 | 证书 2027-02-05 续期、平台侧硬限流与额度告警、回滚脚本化、视觉/OCR 样本评测、站外链接巡检，仍未做 |
+| 并存冲突 | 本机 `npm run deploy:live` 与流水线都会更新同一个 `upcycle-api`，后跑者覆盖前者；手工改过云函数配置后，下一次 push 会被声明式配置重置 |
+
+**本次自动部署验收**：第九节写完后的这次 push 本身即触发测试——若流水线列表出现 `upcycle-deploy-002` 且状态 Successful，P0-1 才算真闭环（见 `../验证记录.md`）。
