@@ -195,6 +195,7 @@ node scripts/verify-pipeline.js         # verify：远端验真，见下
 
 **自动触发限制（2026-11-07 20:10 实证，重要）**：B 流水线的**部署本身完全可用**（首次部署 Successful + 13/13 验真），但 **push 自动触发不通**。控制台「Enable automatic deployment」开关点了、保存提示 "Saved successfully"，提交的请求里 `Trigger={"Webhook":{"Enabled":true,"Branches":["main"]}}` 也确实带上了，但服务端 `DescribeCloudAppInfo` 返回的 `BuildConfig` **根本没有 `Trigger` 字段**（只有 Env/Runner/Source/Steps/WorkingDir），刷新页面开关回到 OFF；`gh api repos/Songhonglei/better-life-suit/hooks` 返回 **0 个 webhook**；第二次 push 后云端 `LatestVersionName` 仍是 `upcycle-deploy-001`。官方文档也写明「`Trigger` 参数（Webhook 触发）暂未对外开放，传入不报错但不生效」。**结论：当前平台版本下，公开仓库部署模式无法靠 push 自动触发**，这不是配置疏漏。要做到「main 变化自动刷新」需降级 A（GitHub Actions，把下面的四步直接搬到 workflow，密钥走 GitHub Secrets），或保留现状用控制台「重新部署」手动触发。
 **怎么触发**：控制台流水线管理 → `upcycle-deploy` → 重新部署。往 `main` push **不会**自动触发，所以目前也不存在「其他子目录误触发」的问题；若将来改成 A 方案，务必在 workflow 里加 `paths: ['upcycle/**']` 过滤。
+**最终决策（2026-11-07 20:37）**：用户已拍板 **暂时不变，保留 B 现状**——`main` 更新后到控制台手工触发「重新部署」即可，**不降级 A、不新增腾讯云长期密钥**。因此上面「自动触发限制」不再是待办阻塞，而是**已接受的平台限制**；固定运维动作为 push → 控制台重新部署 → 看 `verify` 13/13。只有用户主动要求自动刷新，或 CloudBase 后续开放 Webhook `Trigger`，才重新评估 A 方案。
 
 **怎么回滚**：模型配置被覆盖或部署失败时，本机跑 `npm run deploy:live`（从 `models.json` 重新注入 Qwen 配置）并 `GET /api/config` 复核 `mode=live`；静态侧从 `output/backup/` 的备份恢复根页与路由清单。注意本机 `deploy:live` 与流水线**都会更新同一个 `upcycle-api`**，后跑者覆盖前者；手工改过云函数配置后，下一次 push 会被声明式配置重置回来。
 
