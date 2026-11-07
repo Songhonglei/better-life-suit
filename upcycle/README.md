@@ -164,7 +164,7 @@ cd .. && npm run verify:cloudbase
 
 `server.js` 支持 `HOST` 环境变量（默认仍 `127.0.0.1`），仅为将来容器化部署预留，本地预览行为不变。
 
-## 自动部署（CloudBase 原生流水线）
+## 部署流水线（CloudBase 原生流水线，自动触发受限）
 
 2026-11-07 启用。选型 **B · CloudBase 原生流水线**：构建环境预装已登录的 CloudBase CLI，**免腾讯云长期密钥**；范围**只管 `upcycle/`**，门户根页与 `/stock-review/` 不进本仓库、继续手工维护。
 
@@ -173,7 +173,7 @@ cd .. && npm run verify:cloudbase
 | 控制台入口 | CloudBase → 扩展功能 → 流水线管理（`tcb.cloud.tencent.com/dev#/pipeline`） |
 | 流水线名 | `upcycle-deploy` |
 | 触发方式 | **公开仓库部署**（public repo 免 GitHub OAuth），`https://github.com/Songhonglei/better-life-suit`，分支 `main` |
-| 自动部署 | **已开启**：push 到 `main` 自动触发构建与部署；开关在流水线信息页，即时生效、无需重新构建 |
+| 自动部署 | ⚠️ **开关在控制台点过、也保存过，但平台未生效**：实测 push 到 `main` **不会**自动触发。原因见下方「自动触发限制」。当前 deploy 靠控制台「重新部署」手动触发，或点「Deploy」创建流水线时的首次部署 |
 | 目标目录 | `./upcycle` |
 | 命令模式 | 自定义编排，四步：`prepare` → `env` → `deploy` → `verify` |
 | 部署命令 | `tcb deploy --yes --only functions,hosting` |
@@ -193,7 +193,8 @@ node scripts/verify-pipeline.js         # verify：远端验真，见下
 
 **护栏**：`tcb deploy` 固定带 `--only functions,hosting`，**不带 `--prune`、不声明 `gateway`、不写根路径**。静态托管是全站共用一份（根页、`/stock-review/`、`oa/`、`cloud-admin/`、`__auth/` 都在同一环境），dry-run 实测部署计划只有 `update upcycle-api` + `deploy /upcycle` 两项。
 
-**怎么触发**：往 `main` push 任意 commit 即触发；控制台可手动「重新部署」。目前**没有 paths 过滤**：绑的是整个 repo，其他子目录的 push 也会触发一次 upcycle 部署（内容相同、幂等无害，但浪费一次构建）；未来新增工具时要重新评估，或把流水线拆到独立分支/仓库。
+**自动触发限制（2026-11-07 20:10 实证，重要）**：B 流水线的**部署本身完全可用**（首次部署 Successful + 13/13 验真），但 **push 自动触发不通**。控制台「Enable automatic deployment」开关点了、保存提示 "Saved successfully"，提交的请求里 `Trigger={"Webhook":{"Enabled":true,"Branches":["main"]}}` 也确实带上了，但服务端 `DescribeCloudAppInfo` 返回的 `BuildConfig` **根本没有 `Trigger` 字段**（只有 Env/Runner/Source/Steps/WorkingDir），刷新页面开关回到 OFF；`gh api repos/Songhonglei/better-life-suit/hooks` 返回 **0 个 webhook**；第二次 push 后云端 `LatestVersionName` 仍是 `upcycle-deploy-001`。官方文档也写明「`Trigger` 参数（Webhook 触发）暂未对外开放，传入不报错但不生效」。**结论：当前平台版本下，公开仓库部署模式无法靠 push 自动触发**，这不是配置疏漏。要做到「main 变化自动刷新」需降级 A（GitHub Actions，把下面的四步直接搬到 workflow，密钥走 GitHub Secrets），或保留现状用控制台「重新部署」手动触发。
+**怎么触发**：控制台流水线管理 → `upcycle-deploy` → 重新部署。往 `main` push **不会**自动触发，所以目前也不存在「其他子目录误触发」的问题；若将来改成 A 方案，务必在 workflow 里加 `paths: ['upcycle/**']` 过滤。
 
 **怎么回滚**：模型配置被覆盖或部署失败时，本机跑 `npm run deploy:live`（从 `models.json` 重新注入 Qwen 配置）并 `GET /api/config` 复核 `mode=live`；静态侧从 `output/backup/` 的备份恢复根页与路由清单。注意本机 `deploy:live` 与流水线**都会更新同一个 `upcycle-api`**，后跑者覆盖前者；手工改过云函数配置后，下一次 push 会被声明式配置重置回来。
 

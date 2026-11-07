@@ -1,13 +1,13 @@
 # 阶段复盘：GitHub main → CloudBase 自动部署
 
-时间：2026-11-07 19:40 起　｜　当前状态：**已实施完成，push 自动部署已打通**（20:00 更新）
+时间：2026-11-07 19:40 起　｜　当前状态：**流水线部署已打通，push 自动触发被平台限制卡住**（20:10 订正）
 
-> **归档说明**：第一至第八节是 19:40 的探查与设计阶段快照，第七节「需要你协助的事项」为当时状态——用户随后已授权 Qwen Key 从本机读取注入、允许 ego-browser 操作控制台并同意提交 push，五项均已解决。**实施结果见第九节**，最终配置与已知限制以 `../README.md` 的「自动部署」章节和 `../验证记录.md` 为准；文中 `output/backup/` 等路径指本地工作副本 `workbuddy-hy4-upcycle/app/`，不在本仓库内。
+> **归档说明**：第一至第八节是 19:40 的探查与设计阶段快照，第七节「需要你协助的事项」为当时状态——用户随后已授权 Qwen Key 从本机读取注入、允许 ego-browser 操作控制台并同意提交 push，Qwen Key 注入、控制台操作、提交 push 三项已解决；**push 自动触发未打通**。**实施结果见第九节**，最终配置与已知限制以 `../README.md` 的「自动部署」章节和 `../验证记录.md` 为准；文中 `output/backup/` 等路径指本地工作副本 `workbuddy-hy4-upcycle/app/`，不在本仓库内。
 
 ## 一、结论
 
 能实现。官方提供两条自动部署链路，我给了三套方案，你选了 **B · CloudBase 原生流水线**，范围限定 **只管 `upcycle/`，门户根页与 `/stock-review/` 不纳入 repo**。
-当时只完成「可行性探查 + 方案对比 + repo 侧骨架」，未创建流水线、未提交、未部署。后续已全部实施：流水线 `upcycle-deploy` 创建成功、首次部署 `Successful`、push 自动触发已验证（详见第九节）。`case.evansong.cn` 三个页面与云函数全程正常：`mode=live / vision=true / model=qwen3.8-flash / ocr=true`。
+当时只完成「可行性探查 + 方案对比 + repo 侧骨架」，未创建流水线、未提交、未部署。后续已实施：流水线 `upcycle-deploy` 创建成功、首次部署 `Successful`、13/13 验真通过；**push 自动触发经验证不通**（详见第九节）。`case.evansong.cn` 三个页面与云函数全程正常：`mode=live / vision=true / model=qwen3.8-flash / ocr=true`。
 
 ## 二、探查硬结果（都有实证，不靠猜）
 
@@ -90,16 +90,16 @@ repo 工作区新增 3 个文件（**均未 `git add`、未提交**）：
 
 当前任务状态（19:40 快照）：#33 探查已完成；#34 写配置与脚本进行中（3 文件已写、未提交、未同步）；#35 创建流水线、#36 push 实测均待办。
 
-## 九、实施结果（2026-11-07 20:00）
+## 九、实施结果与自动触发现实（20:00 起，20:10 订正）
 
-**结论：B 方案成立，push 自动部署已打通。** 最大的意外是「公开仓库部署」模式**免 GitHub OAuth 授权，且自动部署开关照样在**，绕开了 P0-2 的授权阻塞；开关点开后 push 到 main 就能触发，P0-1 不再是问题。
+**结论要分两半说：B 流水线的「部署」完全打通，「push 自动触发」没打通。** 好消息是「公开仓库部署」模式免 GitHub OAuth，绕开了 P0-2；首次部署 Successful、13/13 验真、密钥端到端解析成功。坏消息是自动部署开关在控制台点了、保存提示成功、请求里也带了 `Trigger={"Webhook":{"Enabled":true,"Branches":["main"]}}`，但服务端 `DescribeCloudAppInfo` 的 `BuildConfig` 里**没有 Trigger 字段**、刷新后开关回到 OFF、`gh api repos/Songhonglei/better-life-suit/hooks` 返回 **0 个 webhook**、第二次 push 后 `LatestVersionName` 仍是 `upcycle-deploy-001`。官方文档「`Trigger` 参数暂未对外开放，传入不报错但不生效」印证了这一点。**P0-1 仍是阻塞**，不是操作疏漏。
 
 ### 落地配置
 
 | 项 | 值 |
 | --- | --- |
 | 流水线 | `upcycle-deploy`，控制台 `#/pipeline`（扩展功能 → 流水线管理） |
-| 触发 | 公开仓库部署，`https://github.com/Songhonglei/better-life-suit` / `main`，**自动部署开关 ON** |
+| 触发 | 公开仓库部署，`https://github.com/Songhonglei/better-life-suit` / `main`；**自动部署开关保存后被服务端丢弃，实际 OFF** |
 | 目标目录 | `./upcycle`；构建日志实证命令被拼成 `cd /root/cloudbase-workspace && cd ./upcycle && <命令>`，路径假设成立 |
 | 自定义编排 | `prepare`（build-cloudbase.js）→ `env`（write-pipeline-env.js）→ `deploy`（`tcb deploy --yes --only functions,hosting`）→ `verify`（verify-pipeline.js） |
 | 密钥 | 流水线环境变量 `SECRET_LLM_BASE_URL` / `SECRET_LLM_API_KEY`，值由 ego-browser 在浏览器进程内从本机 `~/.workbuddy/models.json` 的 `qwen3.8-flash` 读取后填入，不进仓库、不回显到构建日志 |
@@ -123,7 +123,7 @@ repo 工作区新增 3 个文件（**均未 `git add`、未提交**）：
 
 | 项 | 状态 |
 | --- | --- |
-| P1-4 无 `paths` 过滤 | **仍在**：绑整个 repo，其他子目录 push 也会触发一次 upcycle 部署（幂等、无害，但浪费构建）；控制台没给过滤选项，未来加工具要重新评估 |
+| P1-4 无 `paths` 过滤 | 当前**不适用**（push 根本不触发）；若降级 A（GitHub Actions）必须在 workflow 加 `paths: ['upcycle/**']` |
 | P1-2 hosting「直传覆盖」是否清空 `/upcycle/` 旧文件 | 本次实证：上传 8+1 个文件、`tcb hosting list` 总数 21 与部署前一致，`verify` 静态 md5 与存量页面全绿 → 未误删 |
 | P1-3 声明式部署是否重置 `/upcycle/api` 路由 | 本次实证：`/api/config`、真 OCR、真 ideas 全通，路由未被重置 |
 | P1-1 / P1-5 / P2 | 已解决：ideas 断言补上、3 文件同步回本地工作副本、package.json pipeline scripts 与 README 自动部署章节补齐 |
