@@ -130,15 +130,15 @@ cd .. && npm run verify:cloudbase
 
 **部署加固（2026-11-07 收尾）**：`deploy:live` 写密钥前先把 `deploy-cloudbase/cloudbaserc.json` 权限收紧到 `600`（`writeFileSync` 的 `mode` 只对新建文件有效，原来不生效），Ctrl+C / 终止信号 / 异常统一走幂等还原，避免中断后密钥留在生成物里；部署结束后查远端 `/api/config` 确认 `mode=live`，退出码 0 不再等于「线上真的生效」。部署模板若残留 `envVariables` 会直接中止。
 
-**公开网址的护栏**：静态页谁都能打开，云函数里挂着真实模型密钥与 OCR 免费额度，因此加了两层轻量保护：`GET /api/diag` 的探测结果在同一容器内缓存 60 秒（响应带 `cached` / `cacheAgeMs`，加 `?fresh=1` 可强制重测），避免每次自检都真发一次 OCR + STS；`POST /api/ideas|refine|ocr` 按来源 IP 做 60 秒窗口计数，超限返回 429 `rate_limited` 并说明等一分钟再试。默认每来源每分钟 `ideas/refine` 各 12 次、`ocr` 24 次，可用云函数环境变量 `UPCYCLE_RATE_LIMIT` 调整（设 `0` 关闭）；网关没给来源 IP 时共用放大后的额度。**这是护栏不是强防护**：计数只在单个云函数容器内有效，容器回收即重置，需要硬限流仍需平台侧配置。CORS 白名单已放行测试域名、`wanwu.evansong.cn` 与 `stock-review.evansong.cn`，自定义域名页面仍可跨域调用网关接口。
+**公开网址的护栏**：静态页谁都能打开，云函数里挂着真实模型密钥与 OCR 免费额度，因此加了两层轻量保护：`GET /api/diag` 的探测结果在同一容器内缓存 60 秒（响应带 `cached` / `cacheAgeMs`，加 `?fresh=1` 可强制重测），避免每次自检都真发一次 OCR + STS；`POST /api/ideas|refine|ocr` 按来源 IP 做 60 秒窗口计数，超限返回 429 `rate_limited` 并说明等一分钟再试。默认每来源每分钟 `ideas/refine` 各 12 次、`ocr` 24 次，可用云函数环境变量 `UPCYCLE_RATE_LIMIT` 调整（设 `0` 关闭）；网关没给来源 IP 时共用放大后的额度。**这是护栏不是强防护**：计数只在单个云函数容器内有效，容器回收即重置，需要硬限流仍需平台侧配置。CORS 白名单已放行测试域名与 `case.evansong.cn`（旧域名仍在白名单内），OPTIONS 预检实测 204 + `access-control-allow-origin: https://case.evansong.cn`。
 
 **等待与超时**：线上真实模型方案生成实测 16–20 秒。首页能力状态行如实写出「通常 15–30 秒」，live 模式按钮按秒显示已等待时间；前端请求带 `AbortController`，计时器覆盖到响应体完整读完，`ideas/refine` 上限为服务端超时 +10 秒、`ocr` 25 秒、`config` 12 秒，超时给明确提示并保留输入，不会一直转圈。
 
 **视觉识图（已开启）**：`LLM_VISION=true`，上传照片以 OpenAI 兼容的 `image_url`（data URL + `detail:low`）发给 `qwen3.8-flash`，物品与材质由模型看图判断，前端标注「（识别结果）」并允许纠正；OCR 是独立的文字识别，两者不混。实测带真实物品照片的 `POST /api/ideas` 返回 `visionUsed=true`、`recognized={item:"喷雾瓶",material:"塑料",source:"vision"}`，约 15–18 秒出三方案；压缩到 512/q70（约 7KB）后仍能识别。**照片会发给第三方模型服务（阿里云 MaaS）**，首页能力状态行已明确写出「照片会发给模型看图判断物品与材质」。要关闭用 `UPCYCLE_VISION=false npm run deploy:live`；关闭后 `recognized` 只来自填写信息，不会假装识图。视觉测试图 `scripts/fixtures/vision-bottle.jpg` 取自 Wikimedia Commons，仅用于验证、不发布。**2026-11-07 补第二张**带印刷标签的实物图 `scripts/fixtures/vision-shampoo.jpg`（同样仅验证）：用与 `public/app.js` 一致的 Canvas 压缩算法在真实浏览器里压到 683×1024 / q0.82 / 59,687 字符，`POST /api/ocr` 1.5 秒读到 10 行标签文字，`POST /api/ideas` 17.2 秒返回 `recognized={item:"多芬洗发水瓶",material:"塑料",source:"vision"}` 且三款全可行；把 OCR 文字线索一起交给模型再跑一次是 28.4 秒，命名变成英文、三款方案全换——**OCR 线索会显著影响模型输出**，不是 bug。原始响应在 `docs/verify/upcycle-second-*.json`；面向外部用户的详细使用报告见 `docs/万物改造局-使用说明书.md`，线上首页截图 `docs/manual-home.png`。
 
-**默认域名的限制**：CloudBase 测试域名首次访问会出现「风险提醒」中间页，需等 3 秒并点一次「确定访问」；去掉需绑定自定义域名。该环境套餐的自定义域名配额是 `limit 1`，目前被 `stock-review.evansong.cn` 占用。
+**默认域名的限制**：CloudBase 测试域名首次访问会出现「风险提醒」中间页，需等 3 秒并点一次「确定访问」；去掉需绑定自定义域名。该环境套餐的自定义域名配额是 `limit 1`，现在由 `case.evansong.cn` 占用，`stock-review.evansong.cn` 已解绑并停止服务。
 
-**正在切换到 `case.evansong.cn`（2026-11-07 进行中）**：用户决定把默认域名换成 `case.evansong.cn`：根路径放产品门户页（欢迎使用 Evan Song 的在线产品 + 列表），股票复盘工作台挪到 `case.evansong.cn/stock-review/`，万物改造局保持 `case.evansong.cn/upcycle/`。域名策略选「先解绑旧域名再绑新域名」（零成本，切换时有短时 downtime）。`evansong.cn` 的 DNS 托管在阿里云，三条解析记录已由 ego-browser 添加并逐条验真。
+**已切换到 `case.evansong.cn`（2026-11-07 17:55 完成）**：已把默认域名换成 `case.evansong.cn`：根路径放产品门户页（欢迎使用 Evan Song 的在线产品 + 列表），股票复盘工作台挪到 `case.evansong.cn/stock-review/`，万物改造局保持 `case.evansong.cn/upcycle/`。按「先解绑旧域名再绑新域名」执行完毕（零成本，切换时有短时 downtime）；旧域名已分享/收藏的链接随之失效，配额 `limit 1` 不允许双域名并存做 301。`evansong.cn` 的 DNS 托管在阿里云，三条解析记录已由 ego-browser 添加并逐条验真。
 
 | 前置项 | 状态 |
 | --- | --- |
@@ -147,14 +147,18 @@ cd .. && npm run verify:cloudbase
 | 阿里云 TXT `_dnsauth.case`（免费证书 DNS 验证值） | 已生效，证书已签发；保留供续期 |
 | SSL 证书 `case.evansong.cn` | **已颁发**，`CertificateId=cBMkYW1Y`，TrustAsia DV，2026-11-07 → **2027-02-05**（3 个月，需续期） |
 | 云函数 CORS 白名单 | 已放行 `https://case.evansong.cn`、`https://stock-review.evansong.cn`、`https://wanwu.evansong.cn` |
-| 门户页 `portal/index.html` | **橱窗版**：按 `evansong.cn` 主站「暖夜星河」科技风重做（深空底 + 60px 网格 + 玻璃卡 + 赛博蓝/极光紫/翡翠青流动渐变），3 列卡片网格 + 分类筛选 + 内联 SVG 图标 + 仓库角标。8 项产品（6 站外按用户顺序 + 2 本站）仍是 `PRODUCTS` 单一真源，描述/分类/仓库对齐主站 `projects.js` 真实数据；站外新窗口 `↗` + `noopener noreferrer`，站内同窗口。本地 39/39、390px 真视口无横向溢出、线上渲染 8 卡片；预览 `https://stock-review.evansong.cn/portal-preview.html` 远端 md5 逐字节一致（临时文件，切换后删） |
-| 股票复盘子页 `portal/stock-review/index.html` | 已上线 `https://stock-review.evansong.cn/stock-review/`；修好相对 SDK 路径、og 图硬编码旧域名、`og:url`；原页备份在 `output/backup/stock-review-root.original.html` |
+| 门户页 `portal/index.html` | **橱窗版**：按 `evansong.cn` 主站「暖夜星河」科技风重做（深空底 + 60px 网格 + 玻璃卡 + 赛博蓝/极光紫/翡翠青流动渐变），3 列卡片网格 + 分类筛选 + 内联 SVG 图标 + 仓库角标。8 项产品（6 站外按用户顺序 + 2 本站）仍是 `PRODUCTS` 单一真源，描述/分类/仓库对齐主站 `projects.js` 真实数据；站外新窗口 `↗` + `noopener noreferrer`，站内同窗口。本地 39/39、390px 真视口无横向溢出、线上渲染 8 卡片；已覆盖静态托管根 `index.html`，`https://case.evansong.cn/` 远端 md5 逐字节一致；临时预览文件已删 |
+| 股票复盘子页 `portal/stock-review/index.html` | 已上线 `https://case.evansong.cn/stock-review/`；修好相对 SDK 路径、og 图硬编码旧域名、`og:url`；原页备份在 `output/backup/stock-review-root.original.html` |
 
-**剩余步骤（产品清单已就位，待确认后一次性做完）**：门户页覆盖静态托管根 `index.html` → 删除旧域名下 4 条专属路由 → 解绑 `stock-review.evansong.cn` → 用 `CertId=cBMkYW1Y` 绑定 `case.evansong.cn` → 照抄补回 `/`、`/auth-proxy`、`/ocr-proxy`、`/pg` 路由 → 全链路验真；任何一步失败立即回滚重绑旧域名。配额 `limit 1` 仍在，未解绑前不能新增域名。**未动任何现有域名、路由、根首页**。切换有短时 downtime，且解绑后旧域名已被分享/收藏的链接会全部失效（配额不允许两个域名并存做 301），这是切换的固有代价，执行前需确认。完整经验教训、可优化项与遗留清单见 `验证记录.md` 最后一节「阶段复盘」。
+**切换执行记录（2026-11-07 17:55，一次做完）**：门户页覆盖静态托管根 `index.html`（远端 md5 逐字节一致、无 `--prune`）→ 删旧域名 4 条专属路由 → 解绑 `stock-review.evansong.cn` → 用 `CertId=cBMkYW1Y` 绑定 `case.evansong.cn` → 逐条补回 `/`、`/auth-proxy`、`/ocr-proxy`、`/pg` 路由 → 全链路验真 → 删除临时 `portal-preview.html`。回滚依据保存在 `output/backup/domains-before-case.json`、`routes-before-case.json`。
+
+**唯一故障与处理**：绑定成功后约 3 分钟网关仍下发默认 `*.tcloudbase.com` 证书，curl 报 `SSL: no alternative certificate subject name matches`。先用 `-k` 分离验证，确认页面/接口/资源全 200（路由与业务无问题）；证书状态与旧证书完全一致（`Status=1 / Deployable=True`）、两个网关 IP 表现相同 → 判定证书同步延迟而非配置错误；`tcb domains edit case.evansong.cn --certid cBMkYW1Y` 幂等重应用后立即恢复 `TLS=0`、`CN=case.evansong.cn`。**新绑自定义域名后必须复测 TLS SNI，不能只看 `domains ls` 的 SUCCESS**。
+
+**切换后验真**：页面与静态资源全 200；`/api/config` = `mode=live / vision=true / qwen3.8-flash / ocr=true`；真 OCR POST 200 / 330ms / `source=ocr`；`UPCYCLE_URL=https://case.evansong.cn/upcycle/ npm run verify:cloudbase` **12/12 通过**（含跨域真实模型三方案、分享卡、无 CORS 错误、375px 无溢出、无风险提醒）；三条代理路由分别返回业务级 400 `unknown_action` / 400 `missing_image` / 401 `MISSING_CREDENTIALS`；浏览器渲染门户 8 卡片、两个子页标题正确。完整经验教训、可优化项与遗留清单见 `验证记录.md` 最后一节。
 
 早期曾探过 `wanwu.evansong.cn`：`tcb domains add` 预检报配额 `limit 1` + 需加 TXT `_cloudbase-challenge.wanwu`；等价的静态托管通道 `CreateHostingDomain` 返回 `ResourceUnavailable: 静态托管域名不支持绑定，请通过HTTP访问服务绑定域名`，不是配额旁路。该方案已由用户改为 `case.evansong.cn`。
 
-**现在就能用、无风险提醒的地址**：`https://stock-review.evansong.cn/upcycle/`。实测页面、`app.js`、`/upcycle/api/config` 均 200；`UPCYCLE_URL=https://stock-review.evansong.cn/upcycle/ npm run verify:cloudbase` **12/12 通过**，日志明确「测试域名中间页：未出现」，浏览器徽标「已连接模型 · 视觉已启用」。`tcb routes list` 显示该域名 `/` → `STATIC_STORE`，`*` 域名 `/upcycle/api` → SCF，该路径也能同源调接口。切到 `case.evansong.cn` 后，浏览器端到端回归会用 `UPCYCLE_URL` 指向新域名重跑。
+**现在就能用、无风险提醒的地址**：`https://case.evansong.cn/upcycle/`。实测页面、`app.js`、`/upcycle/api/config` 均 200；`UPCYCLE_URL=https://case.evansong.cn/upcycle/ npm run verify:cloudbase` **12/12 通过**，日志明确「测试域名中间页：未出现」，浏览器徽标「已连接模型 · 视觉已启用」。`tcb routes list` 显示该域名 `/` → `STATIC_STORE`，`*` 域名 `/upcycle/api` → SCF，该路径也能同源调接口。已用 `UPCYCLE_URL` 指向新域名重跑浏览器端到端回归，12/12 通过。
 
 **未采用 CloudRun**：`tcb cloudrun deploy` 返回 `CreateCloudRunServer 云托管资源未开通`；该环境是包年包月（prepayment），云托管需在控制台首次开通，因此改用静态托管 + HTTP 云函数。
 
